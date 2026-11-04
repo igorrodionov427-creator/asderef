@@ -47,6 +47,10 @@ Local-only states: `CREATING` (the request to 1Pay is in progress or got no repl
 
 ---
 
+## ⚡ Simplest option: Cloudflare Worker (no Vercel or database)
+The whole server is one file, [`worker/agency-pay-worker.js`](worker/agency-pay-worker.js), plus Telegram notifications. Step-by-step setup is in [`worker/README.md`](worker/README.md).
+The Vercel + PostgreSQL option below (`api/`) is an alternative for larger volumes.
+
 ## Setup: about 15 minutes, done once
 
 ### 1. Database (free): Neon

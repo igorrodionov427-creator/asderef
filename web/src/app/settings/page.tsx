@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { useAuth } from "@/components/Providers";
 import { Shell } from "@/components/Shell";
 import { CopyButton, Field, PageHeader, Spinner } from "@/components/ui";
-import { api, ApiError, clearToken } from "@/lib/api";
+import { api, ApiError, clearToken, setToken } from "@/lib/api";
 import { dateFull } from "@/lib/format";
 
 export default function SettingsPage() {
@@ -47,7 +47,7 @@ function Settings() {
 
       <section className="card p-4 animate-rise md:p-5">
         <h2 className="mb-1 font-medium">Session</h2>
-        <p className="mb-4 text-sm text-muted">This device stays signed in until {dateFull(auth.expiresAt)} or 7 days of inactivity.</p>
+        <p className="mb-4 text-sm text-muted">This device stays signed in until {dateFull(auth.expiresAt)}.</p>
         <div className="grid gap-2.5 sm:grid-cols-2">
           <button onClick={logout} className="btn-secondary">
             <LogOut size={16} /> Sign out
@@ -123,7 +123,8 @@ function ChangePin() {
     if (Object.keys(er).length) return;
     setSaving(true);
     try {
-      await api("/api/auth/password", { method: "POST", json: { current, next } });
+      const r = await api<{ token?: string }>("/api/auth/password", { method: "POST", json: { current, next } });
+      if (r.token) setToken(r.token);
       toast.success("Access code changed. Other devices were signed out.");
       setCurrent("");
       setNext("");
