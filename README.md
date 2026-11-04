@@ -21,7 +21,7 @@ GitHub Pages can only serve static files. It cannot store secrets, receive webho
 
 | Area | What it does |
 |---|---|
-| Disguise | Anyone who opens the site sees a plain **"503 Service Temporarily Unavailable"** page. To get the PIN keypad, **tap the heading 3 times** (or open `…/#unlock`). The site has `noindex`, `robots.txt Disallow`, and a 503 page title. The API answers `404` to everything without a token. |
+| Disguise | Anyone who opens the site sees a plain **"503 Service Temporarily Unavailable"** page. To get the PIN keypad, **tap the word "server" 3 times** (or open `…/#unlock`). The site has `noindex`, `robots.txt Disallow`, and a 503 page title. The API answers `404` to everything without a token. |
 | Login | Numeric code (4–12 digits). It's stored on the server as a **scrypt** hash. Sessions are random 256-bit tokens, and the database keeps only their SHA-256. Session lifetime: 30 days absolute / 7 days of inactivity. You can sign out, or sign out on every device. |
 | Brute-force protection | **5 wrong codes from one IP** lock that IP for 15 min. **10 wrong codes in total, from any IP,** lock everyone for 15 min. Each repeat lockout doubles the time, up to 24 h. On top of that: a 0.6 s delay on every wrong code and a limit of 30 requests per 15 min per IP. All counters live in Postgres, so they survive restarts. |
 | Creating payments | Amount, service, client, email, description. Validation runs in the browser (instant) and again on the server (Zod). The server calls `POST /v1/payments` and saves the real `id` and `url` from 1Pay. You can copy, open, or share (iOS share sheet) the link. |
@@ -101,7 +101,7 @@ Repository → **Settings → Secrets and variables → Actions → New reposito
 * `CRON_SECRET` = the same value as on Vercel
 
 ### 6. On iPhone
-Safari → `https://igorrodionov427-creator.github.io/asderef/` → tap the "503" heading 3× → code → **Share → Add to Home Screen**.
+Safari → `https://igorrodionov427-creator.github.io/asderef/` → tap the word "server" 3× → code → **Share → Add to Home Screen**.
 
 ### 7. Check in test mode
 1. Settings in the app: everything should be green, and the badge should say **TEST MODE**.

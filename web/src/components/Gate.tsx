@@ -7,7 +7,7 @@ import { useAuth } from "./Providers";
 
 /**
  * Public face of the site: a bland "503" server page. Nothing hints at a
- * payment app. Tapping the heading 3× quickly (or opening #unlock) reveals
+ * payment app. Tapping the word "server" 3× quickly (or opening #unlock) reveals
  * the PIN pad. Brute force is stopped server-side (per-IP + global lockout).
  */
 export function Gate() {
@@ -35,11 +35,14 @@ export function Gate() {
   return (
     <div className="min-h-dvh bg-white text-black" style={{ fontFamily: "Times New Roman, Times, serif" }}>
       <div className="px-2 pt-2">
-        <h1 onClick={tap} className="m-0 select-none text-center text-[2em] font-bold leading-tight" style={{ WebkitUserSelect: "none" }}>
-          503 Service Temporarily Unavailable
-        </h1>
+        <h1 className="m-0 text-center text-[2em] font-bold leading-tight">503 Service Temporarily Unavailable</h1>
         <hr className="my-2 border-t border-gray-400" />
-        <p className="text-center text-[16px]">server</p>
+        <p className="text-center text-[16px]">
+          {/* Hidden unlock: tap "server" 3× quickly. Padding gives a finger-sized target. */}
+          <span onClick={tap} className="inline-block cursor-default select-none px-4 py-2" style={{ WebkitUserSelect: "none" }}>
+            server
+          </span>
+        </p>
       </div>
       {open && (
         <PinPad

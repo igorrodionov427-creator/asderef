@@ -86,7 +86,7 @@ function Settings() {
             </span>
           </p>
           <p className="text-[12.5px] text-faint">
-            When signed out, the app shows a blank “503” page. Tap the heading three times to enter your code.
+            When signed out, the app shows a blank “503” page. Tap the word “server” three times to enter your code.
           </p>
         </div>
       </section>

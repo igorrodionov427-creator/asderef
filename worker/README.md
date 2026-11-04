@@ -42,7 +42,7 @@ Copy the worker address (`https://agency-pay.<name>.workers.dev`) into
 The site rebuilds itself within about a minute.
 
 ## Check (test mode)
-Site → tap 3× on "503" → code → **New payment** → $5 → **Create**.
+Site → tap 3× on "server" → code → **New payment** → $5 → **Create**.
 In Telegram you get "🆕 Payment link created". Open the link → **Simulate successful payment**.
 Within a few seconds the status changes to **Paid**, and Telegram shows "✅ PAID [TEST]".
 
