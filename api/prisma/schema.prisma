@@ -1,0 +1,181 @@
+// Agency Pay — PostgreSQL schema (Prisma 6)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Optional: a direct (non-pooled) URL for migrations, e.g. Neon/Supabase.
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+/// The single administrator. Seeded from ADMIN_PASSWORD on first login.
+model Admin {
+  id           String    @id @default(cuid())
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  sessions     Session[]
+}
+
+/// Server-side sessions. Only a SHA-256 hash of the bearer token is stored.
+model Session {
+  id         String   @id @default(cuid())
+  tokenHash  String   @unique
+  adminId    String
+  admin      Admin    @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  expiresAt  DateTime
+  userAgent  String?
+
+  @@index([adminId])
+  @@index([expiresAt])
+}
+
+/// Brute-force protection for the login PIN (per IP hash + one global row).
+model LoginGuard {
+  key         String    @id
+  failures    Int       @default(0)
+  level       Int       @default(0)
+  lockedUntil DateTime?
+  updatedAt   DateTime  @updatedAt
+}
+
+/// Fixed-window rate limiter buckets.
+model RateLimit {
+  key     String   @id
+  count   Int
+  resetAt DateTime
+}
+
+model Client {
+  id        String    @id @default(cuid())
+  /// Normalised identity: "email:<lower email>" or "name:<lower name>".
+  key       String    @unique
+  name      String?
+  email     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  payments  Payment[]
+  projects  Project[]
+
+  @@index([name])
+}
+
+/// A project groups a 50% deposit and the remaining-balance payment.
+model Project {
+  id          String    @id @default(cuid())
+  serviceName String
+  totalAmount Decimal   @db.Decimal(12, 2)
+  currency    String    @default("USD")
+  clientId    String?
+  client      Client?   @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  createdAt   DateTime  @default(now())
+  payments    Payment[]
+
+  @@index([clientId])
+}
+
+enum PaymentKind {
+  FULL
+  DEPOSIT
+  BALANCE
+}
+
+/// CREATING / CREATE_FAILED are local states (request to 1Pay in flight / rejected).
+/// The others mirror 1Pay statuses: pending, paid, underpaid, expired, failed.
+enum PaymentStatus {
+  CREATING
+  CREATE_FAILED
+  PENDING
+  PAID
+  UNDERPAID
+  EXPIRED
+  FAILED
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  /// 1Pay payment id (e.g. "k3Xm9Qp2").
+  onepayId       String?       @unique
+  /// Client-generated key; also sent to 1Pay as Idempotency-Key.
+  idempotencyKey String        @unique
+  kind           PaymentKind   @default(FULL)
+  status         PaymentStatus @default(CREATING)
+  /// Our price (1Pay baseAmount).
+  amount         Decimal       @db.Decimal(12, 2)
+  /// What the buyer is charged (1Pay amount, incl. card surcharge if any).
+  chargedAmount  Decimal?      @db.Decimal(12, 2)
+  currency       String        @default("USD")
+  serviceName    String
+  clientName     String?
+  clientEmail    String?
+  description    String?
+  checkoutUrl    String?
+  livemode       Boolean?
+  expiresAt      DateTime?
+  paidAt         DateTime?
+  settledAmount  Decimal?      @db.Decimal(14, 2)
+  settledAsset   String?
+  provider       String?
+  txidOut        String?
+  /// Set when 1Pay data does not match the stored payment (never marked paid then).
+  verifyError    String?
+  lastError      String?
+  lastSyncedAt   DateTime?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  clientId  String?
+  client    Client?        @relation(fields: [clientId], references: [id], onDelete: SetNull)
+  projectId String?
+  project   Project?       @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  notes     Note[]
+  events    WebhookEvent[]
+
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@index([paidAt])
+  @@index([clientId])
+  @@index([projectId])
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  paymentId String
+  payment   Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([paymentId, createdAt])
+}
+
+enum WebhookStatus {
+  RECEIVED
+  PROCESSED
+  IGNORED
+  REJECTED
+  ERROR
+}
+
+/// Every verified 1Pay delivery. eventId (whe_…) is unique → retries are deduplicated.
+model WebhookEvent {
+  id              String        @id @default(cuid())
+  eventId         String        @unique
+  type            String
+  onepayPaymentId String?
+  paymentId       String?
+  payment         Payment?      @relation(fields: [paymentId], references: [id], onDelete: SetNull)
+  status          WebhookStatus @default(RECEIVED)
+  error           String?
+  attempts        Int           @default(1)
+  payload         Json
+  receivedAt      DateTime      @default(now())
+  processedAt     DateTime?
+
+  @@index([paymentId])
+  @@index([receivedAt])
+}

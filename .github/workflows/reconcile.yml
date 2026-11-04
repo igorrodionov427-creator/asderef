@@ -1,0 +1,27 @@
+name: Reconcile 1Pay payments
+
+# Re-checks open payments every 15 minutes through the API's protected cron
+# endpoint, in case a webhook was missed. Vercel Hobby cron only runs daily,
+# so this keeps statuses fresh for free.
+# Needs repository secrets: AGENCY_PAY_API_URL (e.g. https://xxx.vercel.app) and CRON_SECRET.
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  reconcile:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /api/cron/reconcile
+        env:
+          API_URL: ${{ secrets.AGENCY_PAY_API_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$API_URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "Secrets not set yet - skipping."; exit 0
+          fi
+          curl -fsS --max-time 60 -H "Authorization: Bearer $CRON_SECRET" "${API_URL%/}/api/cron/reconcile"
